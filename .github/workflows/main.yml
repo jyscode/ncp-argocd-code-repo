@@ -89,7 +89,7 @@ jobs:
 
           git clone \
             ssh://3503596_cloudjy0403_7baa5@devtools.ncloud.com:22/3503596/kjy-argo-repo.git \
-            gitops-repo
+            gitops-private
 
       # YAML 업데이트
       - name: Update Deployment YAML
