@@ -19,7 +19,7 @@ jobs:
     - id: set-image
       name: Set dynamic image tag
       run: |
-        IMAGE=${{ env.NCP_REGISTRY }}/apache:$(date +'%Y%m%d')-${GITHUB_SHA::7}
+        IMAGE_TAG=$(date +'%Y%m%d')-${GITHUB_SHA::7}
         echo "IMAGE=$IMAGE" >> $GITHUB_ENV
         echo "IMAGE=$IMAGE" >> $GITHUB_OUTPUT
 
