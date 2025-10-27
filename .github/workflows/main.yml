@@ -11,18 +11,25 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NCP_REGISTRY: argo-repo.kr.ncr.ntruss.com
+    outputs:
+      IMAGE: ${{ steps.set-image.outputs.IMAGE }}
 
     steps:
+    # 1. 소스 코드 체크아웃
     - name: Checkout source code
       uses: actions/checkout@v3
 
+    # 2. 동적 이미지 태그 생성
     - id: set-image
       name: Set dynamic image tag
       run: |
         IMAGE_TAG=$(date +'%Y%m%d')-${GITHUB_SHA::7}
+        IMAGE=${{ env.NCP_REGISTRY }}/apache:$IMAGE_TAG
         echo "IMAGE=$IMAGE" >> $GITHUB_ENV
         echo "IMAGE=$IMAGE" >> $GITHUB_OUTPUT
+        echo "IMAGE=$IMAGE"
 
+    # 3. Docker 레지스트리 로그인
     - name: Log in to NCP Registry
       uses: docker/login-action@v2
       with:
@@ -30,31 +37,40 @@ jobs:
         username: ${{ secrets.NCP_ACCESS_KEY }}
         password: ${{ secrets.NCP_SECRET_KEY }}
 
+    # 4. Docker 이미지 빌드
     - name: Build Docker Image
-      run: docker build -t ${{ env.NCP_REGISTRY }}/apache:${{ env.IMAGE_TAG }} .
+      run: docker build -t ${{ env.IMAGE }} .
 
+    # 5. Docker 이미지 푸시
     - name: Push Docker Image
-      run: docker push ${{ env.NCP_REGISTRY }}/apache:${{ env.IMAGE_TAG }}
+      run: docker push ${{ env.IMAGE }}
 
   update-yaml:
     runs-on: ubuntu-latest
     needs: build-and-push
     steps:
+    # 1. GitOps 리포지토리 체크아웃
     - name: Checkout GitOps Repository
       uses: actions/checkout@v3
       with:
-        repository: "jyscode/ncp-argocd-yaml-repo"
+        repository: "jyscode/ncp-argocd-yaml-repo"  
         token: ${{ secrets.Argo_Repo }}
         path: gitops-repo
 
+    # 2. Deployment YAML 이미지 업데이트
     - name: Update Deployment YAML
       run: |
+        IMAGE=${{ needs.build-and-push.outputs.IMAGE }}
         cd gitops-repo
         DEPLOYMENT_FILE=web/web.yaml
-        sed -i "s|image:.*|image: ${IMAGE}|" web/web.yaml
+        echo "Updating $DEPLOYMENT_FILE with $IMAGE"
 
+        # image 줄 치환
+        sed -i "s|image:.*|image: $IMAGE|" $DEPLOYMENT_FILE
+
+        # git commit & push (변경 사항 없으면 commit 생략)
         git config --global user.name "GitHub Actions"
         git config --global user.email "devops@company.com"
         git add $DEPLOYMENT_FILE
-        git commit -m "Update image to ${{ env.IMAGE }}"
+        git diff --cached --quiet || git commit -m "Update image to $IMAGE"
         git push origin main
