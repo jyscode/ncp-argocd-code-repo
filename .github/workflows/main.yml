@@ -82,7 +82,7 @@ jobs:
       - name: Checkout GitOps Repository (NCP SourceCommit)
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.NCP_GIT_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
           ssh-keyscan devtools.ncloud.com >> ~/.ssh/known_hosts
