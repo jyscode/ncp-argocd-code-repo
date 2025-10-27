@@ -87,7 +87,7 @@ jobs:
 
           ssh-keyscan devtools.ncloud.com >> ~/.ssh/known_hosts
 
-          git clone \
+          git clone -b main \
             ssh://3503596_cloudjy0403_7baa5@devtools.ncloud.com:22/3503596/kjy-argo-repo.git \
             gitops-private
       - name: Check repo structure
